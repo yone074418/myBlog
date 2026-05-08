@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -8,8 +8,25 @@ const auth = useAuthStore()
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)
 const error = ref('')
+const agreed = ref(false)
+const activeTab = ref<'email' | 'wechat'>('email')
+const showOverlay = ref(true)
+
+// Parallax effect for geometric characters
+const mousePos = reactive({ x: 0, y: 0 })
+
+function onMouseMove(e: MouseEvent) {
+  const rect = (e.currentTarget as HTMLElement)?.getBoundingClientRect()
+  if (!rect) return
+  mousePos.x = ((e.clientX - rect.left) / rect.width - 0.5) * 2
+  mousePos.y = ((e.clientY - rect.top) / rect.height - 0.5) * 2
+}
 
 async function handleLogin() {
+  if (!agreed.value) {
+    error.value = '请先阅读并同意用户服务协议和隐私政策'
+    return
+  }
   loading.value = true
   error.value = ''
   try {
@@ -21,131 +38,235 @@ async function handleLogin() {
     loading.value = false
   }
 }
+
+function handleWeChat() {
+  activeTab.value = 'wechat'
+  showOverlay.value = true
+}
+
+function handleEmail() {
+  activeTab.value = 'email'
+  showOverlay.value = false
+}
+
+onMounted(() => {
+  if (auth.isLoggedIn()) {
+    router.push('/')
+  }
+})
 </script>
 
 <template>
   <div class="min-h-screen flex">
-    <!-- 左侧：几何插画视差效果 -->
-    <div class="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-primary-900 via-primary-700 to-orange-500 items-center justify-center">
-      <div class="absolute inset-0 opacity-20">
-        <div class="absolute top-1/4 left-1/4 w-72 h-72 bg-white rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-300 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s"></div>
-      </div>
-
-      <!-- 几何图形 -->
-      <div class="relative w-96 h-96">
-        <!-- 旋转立方体 -->
-        <div class="absolute inset-0 animate-spin-slow">
-          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0
-                      border-l-[60px] border-r-[60px] border-b-[104px]
-                      border-l-transparent border-r-transparent border-b-white/30"></div>
-          <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0
-                      border-l-[60px] border-r-[60px] border-t-[104px]
-                      border-l-transparent border-r-transparent border-t-white/30"></div>
-        </div>
-        <!-- 浮动圆形 -->
-        <div class="absolute top-8 right-8 w-20 h-20 border-2 border-white/40 rounded-full animate-float"></div>
-        <div class="absolute bottom-8 left-8 w-16 h-16 border-2 border-white/30 rounded-lg rotate-45 animate-float" style="animation-delay: 2s"></div>
-        <!-- 点阵 -->
-        <div class="absolute inset-0">
-          <div v-for="i in 6" :key="i"
-               class="absolute w-2 h-2 bg-white/40 rounded-full"
-               :style="{
-                 top: `${20 + Math.sin(i) * 40}%`,
-                 left: `${20 + Math.cos(i * 1.5) * 40}%`,
-                 animationDelay: `${i * 0.5}s`
-               }">
+    <!-- 左侧：几何插画区 -->
+    <div
+      class="hidden lg:flex flex-1 relative bg-slate-50 items-center justify-center overflow-hidden select-none"
+      @mousemove="onMouseMove"
+    >
+      <!-- 几何角色容器 -->
+      <div class="relative w-80 h-96">
+        <!-- 黑色中矩形 (居后) -->
+        <div
+          class="absolute w-28 h-36 bg-gray-900 rounded-xl"
+          :style="{
+            top: '10%',
+            left: '25%',
+            transform: `translate(${mousePos.x * -6}px, ${mousePos.y * -6}px)`,
+            zIndex: 1,
+          }"
+        >
+          <div class="flex gap-2 justify-center mt-4">
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+            <div class="w-3 h-3 rounded-full bg-white"></div>
           </div>
         </div>
-      </div>
 
-      <div class="absolute bottom-12 left-12 text-white">
-        <h1 class="text-4xl font-bold mb-2">MyBlog</h1>
-        <p class="text-white/70 text-lg">记录技术，分享思考</p>
+        <!-- 紫色高矩形 -->
+        <div
+          class="absolute w-32 h-48 bg-violet-500 rounded-2xl"
+          :style="{
+            top: '5%',
+            left: '40%',
+            transform: `translate(${mousePos.x * -10}px, ${mousePos.y * -10}px)`,
+            zIndex: 2,
+          }"
+        >
+          <div class="flex gap-3 justify-center mt-6">
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+          </div>
+          <div class="w-8 h-1.5 bg-white/60 rounded-full mx-auto mt-4"></div>
+        </div>
+
+        <!-- 橙色半圆形 (居前) -->
+        <div
+          class="absolute w-36 h-[72px] bg-orange-400 rounded-t-full"
+          :style="{
+            bottom: '18%',
+            left: '20%',
+            transform: `translate(${mousePos.x * -14}px, ${mousePos.y * -14}px)`,
+            zIndex: 4,
+          }"
+        >
+          <div class="flex gap-4 justify-center pt-5">
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+          </div>
+          <div class="w-10 h-2 bg-white/50 rounded-full mx-auto mt-2"></div>
+        </div>
+
+        <!-- 黄色胶囊形 -->
+        <div
+          class="absolute w-24 h-32 bg-amber-400 rounded-full"
+          :style="{
+            top: '30%',
+            left: '55%',
+            transform: `translate(${mousePos.x * -8}px, ${mousePos.y * -8}px)`,
+            zIndex: 3,
+          }"
+        >
+          <div class="flex gap-2 justify-center mt-8">
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+            <div class="w-3 h-3 rounded-full bg-white"></div>
+          </div>
+          <div class="w-6 h-0.5 bg-white/50 rounded-full mx-auto mt-3"></div>
+        </div>
+
+        <!-- 装饰小圆点 -->
+        <div
+          v-for="i in 8"
+          :key="i"
+          class="absolute w-2 h-2 rounded-full"
+          :class="i % 2 === 0 ? 'bg-blue-400/30' : 'bg-violet-400/30'"
+          :style="{
+            top: `${10 + Math.sin(i * 1.2) * 38 + 50}%`,
+            left: `${10 + Math.cos(i * 0.9) * 35 + 50}%`,
+            transform: `translate(${mousePos.x * (4 + i)}px, ${mousePos.y * (4 + i)}px)`,
+          }"
+        ></div>
       </div>
     </div>
 
     <!-- 右侧：登录表单 -->
-    <div class="flex-1 flex items-center justify-center p-8 bg-gray-50 dark:bg-gray-900">
+    <div class="flex-1 flex items-center justify-center p-8 bg-white">
       <div class="w-full max-w-md">
-        <div class="card p-8 backdrop-blur-lg bg-white/90 dark:bg-gray-800/90">
-          <h2 class="text-2xl font-bold mb-6 text-center">欢迎回来</h2>
+        <!-- Logo & 品牌名 -->
+        <div class="flex items-center gap-2 mb-10">
+          <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+            🌵
+          </div>
+          <span class="text-lg font-bold text-gray-900">仙人掌</span>
+        </div>
 
-          <form @submit.prevent="handleLogin" class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium mb-1.5">用户名</label>
-              <input
-                v-model="form.username"
-                type="text"
-                class="input-field"
-                placeholder="请输入用户名"
-                required
-              />
-            </div>
+        <!-- 标题 -->
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">微信登录</h1>
+        <p class="text-gray-400 text-sm mb-8">未注册的手机号验证后将自动创建账号</p>
 
-            <div>
-              <label class="block text-sm font-medium mb-1.5">密码</label>
-              <input
-                v-model="form.password"
-                type="password"
-                class="input-field"
-                placeholder="请输入密码"
-                required
-              />
-            </div>
+        <!-- Tab 切换栏 -->
+        <div class="bg-gray-100 rounded-xl p-1 flex mb-6">
+          <button
+            class="flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+            :class="activeTab === 'email'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'"
+            @click="handleEmail"
+          >邮箱登录</button>
+          <button
+            class="flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+            :class="activeTab === 'wechat'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'"
+            @click="handleWeChat"
+          >微信</button>
+        </div>
 
-            <p v-if="error" class="text-red-500 text-sm">{{ error }}</p>
-
-            <button
-              type="submit"
-              class="btn-primary w-full !py-2.5"
-              :disabled="loading"
-            >
-              {{ loading ? '登录中...' : '登录' }}
-            </button>
-          </form>
-
-          <div class="mt-6 text-center text-sm text-gray-500">
-            还没有账号？
-            <router-link to="/register" class="text-primary-500 hover:text-primary-600">
-              立即注册
-            </router-link>
+        <!-- 微信登录 - 二维码区域 -->
+        <div v-if="activeTab === 'wechat'" class="relative border-2 border-dashed border-gray-200 rounded-xl h-64 flex items-center justify-center overflow-hidden">
+          <div class="text-center text-gray-300">
+            <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+            </svg>
+            <p class="text-sm">微信扫码登录</p>
           </div>
 
-          <!-- 第三方登录 -->
-          <div class="mt-6">
-            <div class="relative mb-4">
-              <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
-              <div class="relative flex justify-center text-sm">
-                <span class="px-2 bg-white dark:bg-gray-800 text-gray-500">第三方登录</span>
-              </div>
-            </div>
-            <div class="flex justify-center gap-4">
-              <button class="p-3 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-              </button>
-              <button class="p-3 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.954 4.569c-.885.389-1.83.654-2.825.775 1.014-.611 1.794-1.574 2.163-2.723-.951.555-2.005.959-3.127 1.184-.896-.959-2.173-1.559-3.591-1.559-2.717 0-4.92 2.203-4.92 4.917 0 .39.045.765.127 1.124C7.691 8.094 4.066 6.13 1.64 3.161c-.427.722-.666 1.561-.666 2.475 0 1.71.87 3.213 2.188 4.096-.807-.026-1.566-.248-2.228-.616v.061c0 2.385 1.693 4.374 3.946 4.827-.413.111-.849.171-1.296.171-.314 0-.615-.03-.916-.086.631 1.953 2.445 3.377 4.604 3.417-1.68 1.319-3.809 2.105-6.102 2.105-.39 0-.779-.023-1.17-.067 2.189 1.394 4.768 2.209 7.557 2.209 9.054 0 14-7.496 14-13.986 0-.21 0-.42-.015-.63.961-.689 1.8-1.56 2.46-2.548l-.047-.02z"/></svg>
-              </button>
-            </div>
+          <!-- 毛玻璃遮罩 -->
+          <div
+            class="absolute inset-0 backdrop-blur-md bg-white/60 flex items-center justify-center"
+          >
+            <p class="text-gray-400 text-sm font-medium">请先勾选下方协议后刷新二维码</p>
+          </div>
+        </div>
+
+        <!-- 邮箱登录 - 表单区域 -->
+        <div v-if="activeTab === 'email'" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">邮箱 / 用户名</label>
+            <input
+              v-model="form.username"
+              type="text"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+              placeholder="请输入邮箱或用户名"
+              required
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">密码</label>
+            <input
+              v-model="form.password"
+              type="password"
+              class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200"
+              placeholder="请输入密码"
+              required
+            />
+          </div>
+
+          <p v-if="error" class="text-red-500 text-sm">{{ error }}</p>
+
+          <button
+            type="submit"
+            class="btn-primary w-full !py-2.5 !rounded-lg !bg-blue-600 hover:!bg-blue-700"
+            :disabled="loading"
+            @click="handleLogin"
+          >
+            {{ loading ? '登录中...' : '登录' }}
+          </button>
+        </div>
+
+        <!-- 底部操作区 -->
+        <div class="mt-6 space-y-4">
+          <!-- 主按钮 (微信模式下显示) -->
+          <button
+            v-if="activeTab === 'wechat'"
+            class="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+          >
+            刷新二维码
+          </button>
+
+          <!-- 协议复选框 -->
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input
+              v-model="agreed"
+              type="checkbox"
+              class="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span class="text-xs text-gray-500 leading-relaxed">
+              我已阅读并同意
+              <a href="#" class="text-blue-600 hover:text-blue-700">《用户服务协议》</a>
+              和
+              <a href="#" class="text-blue-600 hover:text-blue-700">《隐私政策》</a>
+            </span>
+          </label>
+
+          <!-- 注册入口 -->
+          <div class="text-center text-sm text-gray-400">
+            还没有账号？
+            <router-link to="/register" class="text-blue-600 hover:text-blue-700 font-medium">
+              立即注册
+            </router-link>
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-.animate-spin-slow { animation: spin-slow 20s linear infinite; }
-.animate-float { animation: float 6s ease-in-out infinite; }
-</style>

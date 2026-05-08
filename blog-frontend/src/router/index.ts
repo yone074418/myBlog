@@ -50,10 +50,13 @@ const router = createRouter({
   ],
 })
 
+// Public routes that don't require authentication
+const publicRoutes = ['Login', 'Register']
+
 router.beforeEach((to, _from, next) => {
   const auth = useAuthStore()
-  if (to.meta.requiresAuth && !auth.isLoggedIn()) {
-    next('/login')
+  if (!publicRoutes.includes(to.name as string) && !auth.isLoggedIn()) {
+    next({ name: 'Login' })
   } else {
     next()
   }
