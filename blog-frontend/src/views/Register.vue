@@ -45,10 +45,10 @@ async function handleRegister() {
       <div class="relative w-80 h-80">
         <div class="absolute inset-0 bg-gradient-to-br from-blue-100 to-violet-100 rounded-full blur-3xl opacity-60"></div>
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-          <div class="w-24 h-24 rounded-2xl bg-blue-600 flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
-            🌵
+          <div class="w-24 h-24 rounded-2xl bg-blue-600 flex items-center justify-center text-3xl font-bold text-white mx-auto mb-4 shadow-lg">
+            M
           </div>
-          <h2 class="text-2xl font-bold text-gray-800">加入仙人掌</h2>
+          <h2 class="text-2xl font-bold text-gray-800">加入 MyBlog</h2>
           <p class="text-gray-400 mt-2">开始你的技术之旅</p>
         </div>
       </div>
@@ -61,7 +61,7 @@ async function handleRegister() {
           <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
             🌵
           </div>
-          <span class="text-lg font-bold text-gray-900">仙人掌</span>
+          <span class="text-lg font-bold text-gray-900">MyBlog</span>
         </div>
 
         <h1 class="text-3xl font-bold text-gray-900 mb-2">创建账号</h1>
