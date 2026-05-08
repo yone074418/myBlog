@@ -57,4 +57,10 @@ public class ArticleController {
             @RequestParam(defaultValue = "10") int pageSize) {
         return Result.success(articleService.listByUser(userId, page, pageSize));
     }
+
+    @PostMapping("/{id}/like")
+    @PreAuthorize("isAuthenticated()")
+    public Result<Integer> toggleLike(@PathVariable Long id) {
+        return Result.success(articleService.toggleLike(id));
+    }
 }

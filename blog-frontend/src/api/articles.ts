@@ -41,4 +41,8 @@ export const articleApi = {
       params: { page, pageSize },
     })
   },
+
+  like(id: number) {
+    return request.post<{ data: number }>(`/articles/${id}/like`)
+  },
 }

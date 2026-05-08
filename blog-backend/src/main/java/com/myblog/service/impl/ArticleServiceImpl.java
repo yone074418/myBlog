@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.myblog.common.constant.AppConstant;
 import com.myblog.common.exception.BusinessException;
 import com.myblog.dto.*;
+import com.myblog.common.constant.AppConstant;
 import com.myblog.entity.*;
 import com.myblog.mapper.*;
 import com.myblog.service.ArticleService;
+import com.myblog.entity.InteractionLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
     private final TagMapper tagMapper;
+    private final InteractionLogMapper interactionLogMapper;
 
     @Override
     public PageResult<ArticleDTO> listPublished(int page, int pageSize, String sort, Long categoryId, Long tagId) {
@@ -174,6 +177,40 @@ public class ArticleServiceImpl implements ArticleService {
                 .orderByDesc(Article::getCreateTime);
         Page<Article> articlePage = articleMapper.selectPage(new Page<>(page, pageSize), wrapper);
         return toPageResult(articlePage);
+    }
+
+    @Override
+    @Transactional
+    public int toggleLike(Long articleId) {
+        Article article = articleMapper.selectById(articleId);
+        if (article == null) {
+            throw new BusinessException(404, "article not found");
+        }
+        Long userId = getCurrentUserId();
+
+        int exists = interactionLogMapper.countInteraction(userId, articleId, AppConstant.ACTION_LIKE);
+
+        if (exists > 0) {
+            interactionLogMapper.delete(Wrappers.<InteractionLog>lambdaQuery()
+                    .eq(InteractionLog::getUserId, userId)
+                    .eq(InteractionLog::getTargetId, articleId)
+                    .eq(InteractionLog::getActionType, AppConstant.ACTION_LIKE));
+            articleMapper.update(null, Wrappers.<Article>lambdaUpdate()
+                    .setSql("like_count = GREATEST(like_count - 1, 0)")
+                    .eq(Article::getId, articleId));
+        } else {
+            InteractionLog log = new InteractionLog();
+            log.setUserId(userId);
+            log.setTargetId(articleId);
+            log.setActionType(AppConstant.ACTION_LIKE);
+            interactionLogMapper.insert(log);
+            articleMapper.update(null, Wrappers.<Article>lambdaUpdate()
+                    .setSql("like_count = like_count + 1")
+                    .eq(Article::getId, articleId));
+        }
+
+        article = articleMapper.selectById(articleId);
+        return article.getLikeCount();
     }
 
     private ArticleDTO toDTO(Article article) {

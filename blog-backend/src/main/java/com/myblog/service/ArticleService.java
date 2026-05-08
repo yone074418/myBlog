@@ -12,4 +12,5 @@ public interface ArticleService {
     ArticleDTO update(Long id, ArticleUpdateRequest request);
     void delete(Long id);
     PageResult<ArticleDTO> listByUser(Long userId, int page, int pageSize);
+    int toggleLike(Long articleId);
 }

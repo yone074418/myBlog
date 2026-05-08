@@ -1,33 +1,42 @@
 <script setup lang="ts">
 import type { Article } from '@/types'
+import { articleApi } from '@/api/articles'
+import { useAuthStore } from '@/stores/auth'
 
-defineProps<{ article: Article }>()
+const props = defineProps<{ article: Article }>()
+const auth = useAuthStore()
+
+async function handleLike(e: Event) {
+  e.preventDefault()
+  e.stopPropagation()
+  if (!auth.isLoggedIn()) return
+  try {
+    const res = await articleApi.like(props.article.id)
+    props.article.likeCount = res.data.data
+  } catch {}
+}
 </script>
 
 <template>
-  <article class="card p-5 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+  <article class="card p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer">
     <router-link :to="`/articles/${article.id}`" class="block">
-      <!-- 置顶标签 -->
-      <div v-if="article.isTop" class="flex items-center gap-1 mb-2">
+      <div v-if="article.isTop" class="flex items-center gap-1 mb-3">
         <span class="text-xs px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-medium">
           置顶
         </span>
       </div>
 
-      <div class="flex gap-4">
+      <div class="flex gap-5">
         <div class="flex-1 min-w-0">
-          <!-- 标题 -->
-          <h2 class="text-lg font-bold mb-2 line-clamp-2 hover:text-primary-500 transition-colors">
+          <h2 class="text-lg font-bold mb-3 line-clamp-2 hover:text-primary-500 transition-colors">
             {{ article.title }}
           </h2>
 
-          <!-- 摘要 -->
-          <p v-if="article.summary" class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+          <p v-if="article.summary" class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2 leading-relaxed">
             {{ article.summary }}
           </p>
 
-          <!-- 标签 -->
-          <div v-if="article.tags && article.tags.length > 0" class="flex flex-wrap gap-1.5 mb-3">
+          <div v-if="article.tags && article.tags.length > 0" class="flex flex-wrap gap-1.5 mb-4">
             <span
               v-for="tag in article.tags"
               :key="tag.id"
@@ -36,7 +45,6 @@ defineProps<{ article: Article }>()
             >{{ tag.name }}</span>
           </div>
 
-          <!-- 元数据 -->
           <div class="flex items-center gap-4 text-xs text-gray-500">
             <span class="flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,13 +63,13 @@ defineProps<{ article: Article }>()
               </svg>
               {{ article.viewCount }}
             </span>
-            <span class="flex items-center gap-1">
+            <button class="flex items-center gap-1 hover:text-red-500 transition-colors" @click="handleLike">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               {{ article.likeCount }}
-            </span>
+            </button>
             <span class="flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -72,7 +80,6 @@ defineProps<{ article: Article }>()
           </div>
         </div>
 
-        <!-- 封面图 -->
         <div v-if="article.coverImage" class="hidden sm:block w-32 h-24 flex-shrink-0 rounded-lg overflow-hidden">
           <img :src="article.coverImage" :alt="article.title" class="w-full h-full object-cover" />
         </div>
