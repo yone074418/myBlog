@@ -26,3 +26,7 @@ Thumbs.db
 
 # Claude
 .claude/
+# Temp files
+*_check*.json
+check*.json
+api_test.json
