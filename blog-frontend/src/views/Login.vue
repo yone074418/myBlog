@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -9,16 +9,36 @@ const form = reactive({ username: '', password: '' })
 const loading = ref(false)
 const error = ref('')
 const agreed = ref(false)
+const focusedField = ref<'username' | 'password' | null>(null)
 
-// Parallax effect for geometric characters
-const mousePos = reactive({ x: 0, y: 0 })
+// Mouse tracking for eye movement
+const mouse = reactive({ x: 0.5, y: 0.5 })
 
 function onMouseMove(e: MouseEvent) {
-  const rect = (e.currentTarget as HTMLElement)?.getBoundingClientRect()
-  if (!rect) return
-  mousePos.x = ((e.clientX - rect.left) / rect.width - 0.5) * 2
-  mousePos.y = ((e.clientY - rect.top) / rect.height - 0.5) * 2
+  const panel = (e.currentTarget as HTMLElement)
+  if (!panel) return
+  const rect = panel.getBoundingClientRect()
+  mouse.x = (e.clientX - rect.left) / rect.width
+  mouse.y = (e.clientY - rect.top) / rect.height
 }
+
+// Pupil offset: map mouse [0,1] to pupil offset [-6, 6]px
+const pupilOffset = computed(() => {
+  const px = (mouse.x - 0.5) * 14
+  const py = (mouse.y - 0.5) * 14
+  return { x: px, y: py }
+})
+
+// When password is focused, arms cover eyes → hide pupils
+const hideEyes = computed(() => focusedField.value === 'password')
+
+
+// Mouth expression based on state
+const mouthClass = computed(() => {
+  if (focusedField.value === 'password') return 'worried'
+  if (focusedField.value === 'username') return 'smirk'
+  return 'smile'
+})
 
 async function handleLogin() {
   if (!agreed.value) {
@@ -46,95 +66,122 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen flex">
-    <!-- 左侧：几何插画区 -->
+    <!-- 左侧：插画区 -->
     <div
-      class="hidden lg:flex flex-1 relative bg-slate-50 overflow-hidden select-none"
+      class="hidden lg:flex flex-1 relative bg-gradient-to-br from-sky-50 via-white to-indigo-50 overflow-hidden select-none flex-col items-center justify-center"
       @mousemove="onMouseMove"
     >
-      <!-- 几何角色容器 - 沉底 -->
-      <div class="absolute bottom-0 left-0 right-0 h-[70%]">
-        <!-- 橙色半圆形 (最前方、最底部) -->
-        <div
-          class="absolute w-44 h-22 bg-orange-400 rounded-t-full"
-          :style="{
-            bottom: '-2px',
-            left: '50%',
-            marginLeft: '-88px',
-            zIndex: 40,
-            transform: `translate(${mousePos.x * -16}px, ${mousePos.y * -6}px)`,
-          }"
-        >
-          <div class="flex gap-5 justify-center pt-6">
-            <div class="w-3 h-3 rounded-full bg-white"></div>
-            <div class="w-3 h-3 rounded-full bg-white"></div>
-          </div>
-          <div class="w-10 h-2 bg-white/50 rounded-full mx-auto mt-2"></div>
+      <!-- 装饰背景圆 -->
+      <div class="absolute top-1/4 -left-20 w-72 h-72 bg-blue-100/40 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 -right-20 w-64 h-64 bg-indigo-100/30 rounded-full blur-3xl"></div>
+
+      <!-- 动漫角色 -->
+      <div class="relative">
+        <!-- 身体 -->
+        <div class="w-40 h-44 bg-gradient-to-b from-indigo-400 to-indigo-500 rounded-t-full rounded-b-2xl mx-auto relative shadow-lg">
+          <!-- 衣领 -->
+          <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-3 bg-indigo-600 rounded-full"></div>
         </div>
 
-        <!-- 黄色胶囊形 (右下角，橙色后方露出一半) -->
-        <div
-          class="absolute w-28 h-36 bg-amber-400 rounded-full"
-          :style="{
-            bottom: '25%',
-            right: '8%',
-            zIndex: 30,
-            transform: `translate(${mousePos.x * -10}px, ${mousePos.y * -8}px)`,
-          }"
-        >
-          <div class="flex gap-3 justify-center mt-10">
-            <div class="w-3 h-3 rounded-full bg-white"></div>
-            <div class="w-3 h-3 rounded-full bg-white"></div>
+        <!-- 头部 -->
+        <div class="w-52 h-56 bg-gradient-to-b from-amber-50 to-amber-100 rounded-full mx-auto -mt-8 relative shadow-xl z-10">
+          <!-- 手臂 (从肩膀位置伸出) -->
+          <!-- 左臂 -->
+          <div
+            class="absolute w-5 h-[72px] bg-gradient-to-b from-amber-100 to-amber-200 rounded-full -left-8 top-[88px] origin-top transition-transform duration-500 ease-in-out"
+            :style="{
+              transform: hideEyes ? 'rotate(-130deg)' : 'rotate(10deg)',
+            }"
+          >
+            <div class="absolute -bottom-2 -left-1.5 w-8 h-8 bg-gradient-to-b from-amber-100 to-amber-200 rounded-full"></div>
           </div>
-          <div class="w-6 h-1 bg-white/50 rounded-full mx-auto mt-3"></div>
-        </div>
 
-        <!-- 紫色高矩形 (左侧，高高耸立) -->
-        <div
-          class="absolute w-36 h-56 bg-violet-500 rounded-2xl"
-          :style="{
-            bottom: '8%',
-            left: '12%',
-            zIndex: 20,
-            transform: `translate(${mousePos.x * -12}px, ${mousePos.y * -10}px)`,
-          }"
-        >
-          <div class="flex gap-4 justify-center mt-8">
-            <div class="w-3 h-3 rounded-full bg-white/90"></div>
-            <div class="w-3 h-3 rounded-full bg-white/90"></div>
+          <!-- 右臂 -->
+          <div
+            class="absolute w-5 h-[72px] bg-gradient-to-b from-amber-100 to-amber-200 rounded-full -right-8 top-[88px] origin-top transition-transform duration-500 ease-in-out"
+            :style="{
+              transform: hideEyes ? 'rotate(130deg)' : 'rotate(-10deg)',
+            }"
+          >
+            <div class="absolute -bottom-2 -right-1.5 w-8 h-8 bg-gradient-to-b from-amber-100 to-amber-200 rounded-full"></div>
           </div>
-          <div class="w-10 h-2 bg-white/50 rounded-full mx-auto mt-5"></div>
-        </div>
 
-        <!-- 黑色中矩形 (夹在紫黄中间后方，只露上半部分) -->
-        <div
-          class="absolute w-32 h-28 bg-gray-900 rounded-xl"
-          :style="{
-            bottom: '38%',
-            left: '38%',
-            zIndex: 10,
-            transform: `translate(${mousePos.x * -8}px, ${mousePos.y * -7}px)`,
-          }"
-        >
-          <div class="flex gap-3 justify-center mt-4">
-            <div class="w-3 h-3 rounded-full bg-white"></div>
-            <div class="w-3 h-3 rounded-full bg-white/60"></div>
-            <div class="w-3 h-3 rounded-full bg-white"></div>
+          <!-- 头发 - 刘海 -->
+          <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-56 h-28">
+            <div class="w-full h-full bg-gradient-to-b from-gray-800 to-gray-700 rounded-t-full" style="clip-path: polygon(0 0, 100% 0, 85% 100%, 50% 85%, 15% 100%)">
+            </div>
+            <!-- 刘海分叉 -->
+            <div class="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-16 bg-gray-800 rounded-b-full"></div>
+            <div class="absolute top-6 left-[30%] w-4 h-6 bg-gray-800 rounded-b-full"></div>
+            <div class="absolute top-6 right-[30%] w-4 h-6 bg-gray-800 rounded-b-full"></div>
+          </div>
+
+          <!-- 侧发 -->
+          <div class="absolute -left-3 top-8 w-3 h-24 bg-gray-800 rounded-full"></div>
+          <div class="absolute -right-3 top-8 w-3 h-24 bg-gray-800 rounded-full"></div>
+
+          <!-- 眼睛区域 -->
+          <div class="flex justify-center gap-10 pt-20 relative" style="z-index: 5">
+            <!-- 左眼 -->
+            <div class="relative w-14 h-14 bg-white rounded-full shadow-inner overflow-hidden border-2 border-gray-700">
+              <!-- 眼珠 (密码输入时隐藏) -->
+              <div
+                v-if="!hideEyes"
+                class="absolute w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full transition-opacity duration-300"
+                :style="{
+                  left: `calc(50% - 16px + ${pupilOffset.x}px)`,
+                  top: `calc(50% - 16px + ${pupilOffset.y}px)`,
+                }"
+              >
+                <div class="absolute top-1.5 left-2 w-2.5 h-2.5 bg-white/80 rounded-full"></div>
+                <div class="absolute bottom-2 right-1.5 w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+              </div>
+              <!-- 密码输入时显示 > < 眼 -->
+              <div v-else class="absolute inset-0 flex items-center justify-center text-gray-600 text-lg font-bold">
+                &gt; &lt;
+              </div>
+            </div>
+            <!-- 右眼 -->
+            <div class="relative w-14 h-14 bg-white rounded-full shadow-inner overflow-hidden border-2 border-gray-700">
+              <div
+                v-if="!hideEyes"
+                class="absolute w-8 h-8 bg-gradient-to-br from-gray-800 to-gray-900 rounded-full transition-opacity duration-300"
+                :style="{
+                  left: `calc(50% - 16px + ${pupilOffset.x}px)`,
+                  top: `calc(50% - 16px + ${pupilOffset.y}px)`,
+                }"
+              >
+                <div class="absolute top-1.5 left-2 w-2.5 h-2.5 bg-white/80 rounded-full"></div>
+                <div class="absolute bottom-2 right-1.5 w-1.5 h-1.5 bg-white/40 rounded-full"></div>
+              </div>
+              <div v-else class="absolute inset-0 flex items-center justify-center text-gray-600 text-lg font-bold">
+                &gt; &lt;
+              </div>
+            </div>
+          </div>
+
+          <!-- 腮红 -->
+          <div class="absolute left-5 top-[68%] w-4 h-2.5 bg-pink-300/50 rounded-full" style="z-index: 5"></div>
+          <div class="absolute right-5 top-[68%] w-4 h-2.5 bg-pink-300/50 rounded-full" style="z-index: 5"></div>
+
+          <!-- 嘴巴 (动态表情) -->
+          <div class="flex justify-center mt-2 relative" style="z-index: 5">
+            <!-- 微笑 (默认) -->
+            <div v-if="mouthClass === 'smile'" class="w-6 h-3 border-b-2 border-gray-500 rounded-full"></div>
+            <!-- 抿嘴笑 (输用户名时) -->
+            <div v-else-if="mouthClass === 'smirk'" class="w-6 h-3 border-b-2 border-gray-500 rounded-full" style="transform: skewX(-8deg)"></div>
+            <!-- O形嘴 (输密码时 - 表示"我不该看") -->
+            <div v-else-if="mouthClass === 'worried'" class="w-3 h-3.5 border-2 border-gray-500 rounded-full bg-pink-100"></div>
           </div>
         </div>
-
-        <!-- 装饰小圆点 -->
-        <div
-          v-for="i in 6"
-          :key="i"
-          class="absolute w-2 h-2 rounded-full"
-          :class="i % 2 === 0 ? 'bg-blue-400/25' : 'bg-violet-400/25'"
-          :style="{
-            bottom: `${8 + Math.sin(i * 1.3) * 20 + 50}%`,
-            left: `${15 + Math.cos(i * 0.8) * 30}%`,
-            transform: `translate(${mousePos.x * (3 + i)}px, ${mousePos.y * (3 + i)}px)`,
-          }"
-        ></div>
       </div>
+
+      <!-- 底部状态文字 -->
+      <p class="mt-6 text-gray-400 text-sm tracking-wider transition-all duration-300">
+        <span v-if="focusedField === 'password'">🙈 放心，我看不见</span>
+        <span v-else-if="focusedField === 'username'">✍️ 继续填写吧</span>
+        <span v-else>👋 欢迎来到 MyBlog</span>
+      </p>
     </div>
 
     <!-- 右侧：登录表单 -->
@@ -162,6 +209,8 @@ onMounted(() => {
               class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 text-sm"
               placeholder="请输入邮箱或用户名"
               required
+              @focus="focusedField = 'username'"
+              @blur="focusedField = null"
             />
           </div>
 
@@ -173,6 +222,8 @@ onMounted(() => {
               class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all duration-200 text-sm"
               placeholder="请输入密码"
               required
+              @focus="focusedField = 'password'"
+              @blur="focusedField = null"
             />
           </div>
 
