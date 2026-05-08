@@ -1,0 +1,28 @@
+# Java
+blog-backend/target/
+*.class
+*.jar
+*.war
+
+# Maven
+blog-backend/.mvn/
+
+# Node
+blog-frontend/node_modules/
+blog-frontend/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+*.local
+
+# Claude
+.claude/
