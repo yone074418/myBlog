@@ -99,3 +99,11 @@ INSERT IGNORE INTO `blog_comment` (`id`, `article_id`, `user_id`, `parent_id`, `
 (6, 9, 4, NULL, NULL, '费曼学习法确实好用，我最近也在用这个方法学习 Spring Cloud', 1),
 (7, 11, 4, NULL, NULL, '缓存穿透的布隆过滤器方案，在实际项目中很有用', 1),
 (8, 12, 4, NULL, NULL, 'GitHub Actions 配置得很详细，照着配就能用', 1);
+
+-- 为推荐文章设置封面图
+UPDATE `blog_article` SET `cover_image` = 'https://picsum.photos/seed/spring/400/200' WHERE `id` = 1;
+UPDATE `blog_article` SET `cover_image` = 'https://picsum.photos/seed/year/400/200' WHERE `id` = 2;
+UPDATE `blog_article` SET `cover_image` = 'https://picsum.photos/seed/vue3/400/200' WHERE `id` = 3;
+UPDATE `blog_article` SET `cover_image` = 'https://picsum.photos/seed/docker/400/200' WHERE `id` = 10;
+UPDATE `blog_article` SET `cover_image` = 'https://picsum.photos/seed/redis/400/200' WHERE `id` = 11;
+UPDATE `blog_article` SET `cover_image` = 'https://picsum.photos/seed/code/400/200' WHERE `id` = 9;

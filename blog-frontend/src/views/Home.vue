@@ -94,11 +94,14 @@ onMounted(() => {
           class="card group cursor-pointer overflow-hidden hover:-translate-y-1 hover:shadow-md
                  transition-all duration-300"
         >
-          <div class="h-32 bg-gradient-to-br from-primary-400 to-primary-600 relative overflow-hidden">
-            <div v-if="article.coverImage" class="absolute inset-0">
-              <img :src="article.coverImage" :alt="article.title" class="w-full h-full object-cover" />
-            </div>
-            <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          <div class="h-32 relative overflow-hidden bg-gray-200 dark:bg-gray-700">
+            <img
+              :src="article.coverImage || `https://picsum.photos/seed/${article.id}/400/200`"
+              :alt="article.title"
+              class="w-full h-full object-cover"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
             <div class="absolute bottom-2 left-3 right-3">
               <h3 class="text-white font-medium text-sm line-clamp-2 group-hover:text-primary-200 transition-colors">
                 {{ article.title }}
